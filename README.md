@@ -26,6 +26,10 @@ Your obsidian vault contains a lot of documents, but you want to publish only so
 
 You can install `journalx` using pip
 
+```bash
+pip install journalx
+```
+
 
 ## Commands
 
