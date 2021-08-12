@@ -1,8 +1,7 @@
-# :pencil2: Journalx: Supercharge your Obsidian Vault
+# Journalx
+## Supercharge your Obsidian Vault
 
 Journalx allows you to turn your obsidian vault to a blog. It's still in early stages and requires a lot of work, but it's useful right away if you have some key ingredients in place.
-
-
 
 ### Prerequisites
 
@@ -39,3 +38,6 @@ process.py --publish
 ```
 
  
+## Links
+
+Learn more about journalx on [JournalX on Github](https://github.com/altairmn/journalx)
