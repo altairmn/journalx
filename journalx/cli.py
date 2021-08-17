@@ -29,8 +29,3 @@ def add_metadata():
     add metadata to all the files in the vault
     """
     jx.add_metadata()
-
-@cli.command()
-def showmd():
-    for f in jx.md_files():
-        print(f)
