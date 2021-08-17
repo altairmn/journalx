@@ -8,7 +8,6 @@ import copy
 import datetime
 import re
 import shutil
-from . import config
 import click
 import configparser
 
