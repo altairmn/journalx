@@ -14,6 +14,7 @@ Your obsidian vault contains a lot of documents, but you want to publish only so
 
 - Automatically transfering documents that are tagged for publishing
 - Transfers images to destination directory, and substitutes image paths in markdown
+- Handlers `mermaid` codeblocks
 - [WIP] Watch dir for changes, and transfer on change
 - [WIP] Build and publish after transfering documents
 - [WIP] Handle other static assets other than files
@@ -33,6 +34,11 @@ pip install journalx
 
 ## Commands
 
+For help, just use
+```bash
+jx
+```
+
 ### Publishing
 
 `config.ini` file contains settings which dictate the base directory of your [hugo](https://gohugo.io) website.
@@ -42,18 +48,36 @@ To create the config if it's not present
 jx init --publish-dir <publish-dir>
 ```
 
-Add metadata to `md` documents in your vault. This is required for publishing which looks for metadata values `publish: True` and `draft: False` in the document's metadata header.
+Add/Update metadata to `md` documents in your vault. This is required for publishing which looks for metadata values `publish: True` and `draft: False` in the document's metadata header. The title of the file is set to the first heading in the file.
 If your documents don't have a yaml header (or only some of them do, not all), you can add it to all documents by
 ```bash
-jx add-metadata
+jx metadata update
+```
+
+To clear metadata from all documents
+```bash
+jx metadata clear
 ```
 
 After you're done adding metadata, you can turn `publish:True` and `draft:False` on documents you want to publish.
 The publish command make sure that they'll be transfered to configured `{publish_dir}/content/post` directory while the images 
 that are present in the document will be transfered to `{publish_dir}/static/images` and the image links will be updated.
+All transfered files will be sent in `*.pdc` format instead of markdown.
+If the `mermaid:True` flag is present in the metdata, it'll also update all the mermaid codeblocks to have the delimeters `{{< mermaid >}}` and `{{< /mermaid >}}`
+
 
 ```bash
 jx publish
 ```
 
- 
+For a specific file, use
+
+```bash
+jx publish -f
+```
+
+or
+
+```bash
+jx publish --file
+```

@@ -61,49 +61,65 @@ class Post(frontmatter.Post):
         """
         Change image path and copy images to image dir
         """
-        def get_img_path_processor(img_dir):
-            def process_img_path(matchobj):
-                src_path = pathlib.Path(matchobj.group(2))
-                dest_path = img_dir.joinpath(src_path.name)
-                return matchobj.group(0).replace(matchobj.group(2), dest_path.as_posix())
-            return process_img_path
-
-        img_processor = get_img_path_processor(dest_dir)
+        def img_path_processor(matchobj):
+            match_str = ''.join(["" if x is None else x for x in matchobj.group(1,2)])
+            src_path = pathlib.Path(match_str)
+            dest_path = f"/images/{src_path.name}"
+            return matchobj.group(0).replace(match_str, dest_path)
 
         # for each file, find all images
-        img_regex = r'!\[(\S*)\]\((\S*)\)'
+        img_regex1 = r'!\[\S*\]\((\S*)\)'
+        img_regex2 = r'<img src="(.*?)"'
+        img_regex = re.compile(fr"{img_regex1}|{img_regex2}")
         imgs = re.findall(img_regex, self.content)
 
         # copy images to another folder
         for img in imgs:
-            img_path = pathlib.Path(img[1])
+            img_path = pathlib.Path(''.join(img))
             dest_path = dest_dir.joinpath(img_path.name)
             shutil.copy2(img_path, dest_path)
 
         # replace in content   
-        self.content = re.sub(img_regex, img_processor, self.content)
+        self.content = re.sub(img_regex, img_path_processor, self.content)
+    
+    def process_codeblock(self, lang_name, start_tag, end_tag):
+        cbl_pattern = fr'```{lang_name}(.*?)```'
+        results = re.findall(cbl_pattern, self.content, flags = re.DOTALL)
+        def regex_processor(matchobj):
+            return f"{start_tag}{matchobj.group(1)}{end_tag}"
+        self.content = re.sub(cbl_pattern, regex_processor, self.content, flags = re.DOTALL)
 
     def modify_metadata(self, fpath):
         ts_to_dt = lambda ts: datetime.datetime.fromtimestamp(ts)
 
         metadata_base = {
             "title": None,
-            "created_date": None,
-            "modified_date": None,
+            "date": None,
+            "last_modified": None,
             "draft": True,
             "publish": False,
-            "math": False
+            "math": False,
+            "mermaid": False
         }
 
         metadata = metadata_base
-        metadata["title"] = f"\"{fpath.name}\""
-        metadata["created_date"] = ts_to_dt(fpath.stat().st_ctime)
-        metadata["modified_date"] = ts_to_dt(fpath.stat().st_mtime)
+        metadata["date"] = ts_to_dt(fpath.stat().st_ctime)
 
         for k,v in self.metadata.items():
             metadata[k] = v
 
+        for hnum in range(1,6):
+            pattern = rf'^{"#"*hnum} (.*)$'
+            title = re.search(pattern, self.content, flags=re.MULTILINE) 
+            if title is not None:
+                break
+        metadata["title"] = f"\"{fpath.name}\"" if title is None else title.group(1)
+        metadata["last_modified"] = ts_to_dt(fpath.stat().st_mtime)
+
         self.metadata = metadata
+
+    def clear_metadata(self):
+        self.metadata = {}
 
 
 def add_metadata():
@@ -116,13 +132,25 @@ def add_metadata():
             ftxt = frontmatter.dumps(post)
             f.write(ftxt)
 
-def publish():
+def clear_metadata():
+    for fpath in md_files():
+        with open(fpath, 'r') as f:
+            post = frontmatter.load(f)
+            post.__class__ = Post
+            post.clear_metadata()
+        with open(fpath, 'w') as f:
+            ftxt = frontmatter.dumps(post)
+            f.write(ftxt)
+
+def publish(fp = None):
     config = lConfig.get() # fails here if file doesn't exist
     publish_dir = pathlib.Path(config['settings']['publish_dir'])
     content_dir = publish_dir.joinpath("content/post")
     image_dir = publish_dir.joinpath("static/images")
 
     for fpath in md_files():
+        if fp is not None and pathlib.Path(fp) != fpath:
+            continue
         with open(fpath, 'r') as f:
             post = frontmatter.load(f)
             post.__class__ = Post
@@ -131,10 +159,12 @@ def publish():
             and 'draft' in post.metadata and post.metadata['draft'] is False:
                 # replace the images in the post and copy the images to image_dir
                 post.move_images(image_dir)
+                if 'mermaid' in post.metadata and post.metadata['mermaid'] is True:
+                    post.process_codeblock(lang_name='mermaid', start_tag=r'{{< mermaid align="center">}}', end_tag=r'{{< /mermaid >}}')
             else:
                 continue
 
-        dest_path = content_dir.joinpath(fpath.name)
+        dest_path = content_dir.joinpath(f"{fpath.stem}.pdc")
 
         with open(dest_path, 'w') as f:
             ftxt = frontmatter.dumps(post)

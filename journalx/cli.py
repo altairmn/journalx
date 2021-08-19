@@ -17,15 +17,33 @@ def init(publish_dir):
 
 
 @cli.command()
-def publish():
+@click.option('-f', '--file', 'fpath', type=click.Path(exists=True, resolve_path=True))
+def publish(fpath):
     """
     publish all the posts in the directories
     """
-    jx.publish()
+    jx.publish(fpath)
 
-@cli.command()
-def add_metadata():
+@cli.group()
+def metadata():
     """
     add metadata to all the files in the vault
     """
+    pass
+
+@metadata.command()
+def update():
+    """
+    Update metadata to all md files in the vault.
+    Adds in missing files.
+    """
+    print("Adding metadata...")
     jx.add_metadata()
+
+@metadata.command()
+def clear():
+    """
+    Clear metadata from all files in the vault
+    """
+    print("Clearing metadata...")
+    jx.clear_metadata()
