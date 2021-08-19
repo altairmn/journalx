@@ -73,11 +73,11 @@ jx publish
 For a specific file, use
 
 ```bash
-jx publish -f
+jx publish -f PATH
 ```
 
 or
 
 ```bash
-jx publish --file
+jx publish --file PATH
 ```
